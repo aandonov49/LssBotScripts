@@ -30,6 +30,11 @@ public class GatherBuildScript extends AbstractScript {
     }
 
     @Override
+    public String getTask() {
+        return "Gather Build";
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
     }
