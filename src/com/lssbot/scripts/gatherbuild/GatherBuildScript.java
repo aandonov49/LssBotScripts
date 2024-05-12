@@ -3,7 +3,6 @@ package com.lssbot.scripts.gatherbuild;
 import com.lssbot.core.api.device.Device;
 import com.lssbot.core.api.game.Game;
 import com.lssbot.core.api.game.roe.menus.build.ROEBuildMenuCategory;
-import com.lssbot.core.api.geometry.BRectangle;
 import com.lssbot.core.api.script.AbstractScript;
 import com.lssbot.core.api.script.ScriptManifest;
 import com.lssbot.core.api.script.config.Config;
@@ -17,8 +16,9 @@ import com.lssbot.core.api.script.config.Config;
         author = "Atanas Andonov"
 )
 public class GatherBuildScript extends AbstractScript {
-    private final GatherBuildConfig CONFIG = new GatherBuildConfig();
-    private boolean scrollRight = false;
+    protected final GatherBuildConfig CONFIG = new GatherBuildConfig();
+    protected boolean scrollRight = false;
+    protected ROECoordinatesMnu roeCoordinatesMenu;
 
     public GatherBuildScript(Device device) {
         super(device);
@@ -36,6 +36,9 @@ public class GatherBuildScript extends AbstractScript {
 
     @Override
     public void onStart() {
+        if (CONFIG.gather.getButtons().size()>1){
+            throw new RuntimeException("Only one value must be selected");
+        }
         if (CONFIG.gather.getButtons().contains(ROEBuildMenuCategory.IRON.name())) {
             scrollRight = true;
         }
@@ -43,16 +46,20 @@ public class GatherBuildScript extends AbstractScript {
     }
 
     @Override
-    public String getTask() {
-        return "Gather Build";
-    }
-
-    @Override
     public int loop() {
+        this.roeCoordinatesMenu = new ROECoordinatesMnu(getDevice(), roe());
         if (!isOnMap()) {
             return -1;
         }
-        openMapBuildMenu();
+        if (roeCoordinatesMenu.openSearchCoordinates()){
+            getDevice().log("Coordinates menu is open");
+            roeCoordinatesMenu.setCoordinates(117,666,546);
+            roeCoordinatesMenu.clickSearchCoordinates();
+        }
+
+//        openMapBuildMenu();
+        roe().getViewport().enterBase();
+        sleepUntil(() -> roe().getViewport().isInBase(), 4000);
         return 0;
     }
 
@@ -64,6 +71,7 @@ public class GatherBuildScript extends AbstractScript {
     private boolean isOnMap() {
         if (!roe().getViewport().isOnMap()) {
             roe().getViewport().openMap();
+            sleepUntil(() -> roe().getViewport().isOnMap(), 4000);
             return roe().getViewport().isOnMap();
         }
         return false;
@@ -78,8 +86,9 @@ public class GatherBuildScript extends AbstractScript {
     }
 
     private boolean isBuidlMenuOpen() {
-        BRectangle buildMenuText = getOpenCV().getAreaMatch(Images.BUILD_MENU_TEXT, 0.75);
-        device.log("Is Build Menu on the map Open? " + (buildMenuText == null ? "False" : "True"));
-        return buildMenuText != null;
+        device.c.b();
+        boolean buildMenuText = getOpenCV().isTemplateOnScreen(Images.BUILD_MENU_TEXT, 0.75);
+        device.log("Is Build Menu on the map Open? " + buildMenuText);
+        return buildMenuText;
     }
 }
