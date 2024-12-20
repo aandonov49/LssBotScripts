@@ -24,4 +24,22 @@ public class GatherBuildConfig implements Config {
             defaultStringModel = {"Marble", "Iron", "Lumber", "Food"}
     )
     StringPickPanel gather = new StringPickPanel(ROEBuildMenuCategory.MARBLE.name(), ROEBuildMenuCategory.IRON.name(), ROEBuildMenuCategory.LUMBER.name(), ROEBuildMenuCategory.FOOD.name());
+    @ConfigItem(
+            keyName = "state",
+            displayName = "State",
+            groupName = "Tile location"
+    )
+    int state;
+    @ConfigItem(
+            keyName = "xConfig",
+            displayName = "X coordinate",
+            groupName = "Tile location"
+    )
+    int xConfig;
+    @ConfigItem(
+            keyName = "yConfig",
+            displayName = "Y coordinate",
+            groupName = "Tile location"
+    )
+    int yConfig;
 }

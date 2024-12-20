@@ -3,9 +3,17 @@ package com.lssbot.scripts.gatherbuild;
 import com.lssbot.core.api.device.Device;
 import com.lssbot.core.api.game.Game;
 import com.lssbot.core.api.game.roe.menus.build.ROEBuildMenuCategory;
+import com.lssbot.core.api.geometry.BPoint;
+import com.lssbot.core.api.geometry.BRectangle;
+import com.lssbot.core.api.random.RNG;
 import com.lssbot.core.api.script.AbstractScript;
 import com.lssbot.core.api.script.ScriptManifest;
 import com.lssbot.core.api.script.config.Config;
+import com.lssbot.core.framework.device.DeviceEngine;
+import net.sourceforge.tess4j.Word;
+
+import java.awt.image.BufferedImage;
+import java.util.List;
 
 @ScriptManifest(
         game = Game.RISE_OF_EMPIRES,
@@ -19,6 +27,7 @@ public class GatherBuildScript extends AbstractScript {
     protected final GatherBuildConfig CONFIG = new GatherBuildConfig();
     protected boolean scrollRight = false;
     protected ROECoordinatesMnu roeCoordinatesMenu;
+    private static final BPoint COORDINATES_FOUND_MOUSE_CLICK = new BPoint(270, 480);
 
     public GatherBuildScript(Device device) {
         super(device);
@@ -41,7 +50,7 @@ public class GatherBuildScript extends AbstractScript {
 
     @Override
     public void onStart() {
-        if (CONFIG.gather.getButtons().size()>1){
+        if (CONFIG.gather.getButtons().size() > 1) {
             throw new RuntimeException("Only one value must be selected");
         }
         if (CONFIG.gather.getButtons().contains(ROEBuildMenuCategory.IRON.name())) {
@@ -53,13 +62,25 @@ public class GatherBuildScript extends AbstractScript {
     @Override
     public int loop() {
         this.roeCoordinatesMenu = new ROECoordinatesMnu(getDevice(), roe());
+        sleep(4000);
         if (!isOnMap()) {
             return -1;
         }
-        if (roeCoordinatesMenu.openSearchCoordinates()){
+        if (roeCoordinatesMenu.openSearchCoordinates()) {
             getDevice().log("Coordinates menu is open");
-            roeCoordinatesMenu.setCoordinates(117,666,546);
+            roeCoordinatesMenu.setCoordinates(CONFIG.state, CONFIG.xConfig, CONFIG.yConfig);
             roeCoordinatesMenu.clickSearchCoordinates();
+            roeCoordinatesMenu.mouseClick(COORDINATES_FOUND_MOUSE_CLICK, 2000, 50);
+            BufferedImage image = device.a();
+            BufferedImage image1 = getOpenCV().threshold(image, 1, 111);
+            String text = getOCR().parseText(image1);
+            device.log(text);
+            if (text.toLowerCase().contains("plot lv.")) {
+                device.log("Empty plot found");
+            }
+
+            sleep(4000);
+//            sleep(6000);
         }
 
 //        openMapBuildMenu();
@@ -91,9 +112,12 @@ public class GatherBuildScript extends AbstractScript {
     }
 
     private boolean isBuidlMenuOpen() {
-        device.c.b();
+        BufferedImage image = device.a();
+        getOpenCV().threshold(image, 1, 145);
+        String text = getOCR().parseText(image);
         boolean buildMenuText = getOpenCV().isTemplateOnScreen(Images.BUILD_MENU_TEXT, 0.75);
         device.log("Is Build Menu on the map Open? " + buildMenuText);
         return buildMenuText;
     }
+
 }
